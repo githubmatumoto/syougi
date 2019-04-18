@@ -16,6 +16,13 @@ using namespace std;
 #define MASU_LIMIT 0
 #endif
 
+
+#if IKIDOKORO_NASHI
+// 廃止フラグ
+#error "NG: -DIKIDOKORO_NASHI"
+#endif
+
+
 enum KOMA {
 //飛車・角行・王将・香車・金将・銀将・桂馬・歩兵
   EMPTY = 0, // 
@@ -45,24 +52,18 @@ enum KOMA {
   GIN=105, // 4枚
   KEI=106, // 4枚
   FU=107, // 18枚
-#ifdef GEN_GOTE // 後手有り
   // 飛車, 角, 王は先手後手の区別無し。
   rKYOU = 108,
   rKIN = 109,
   rGIN = 110,
   rKEI = 111,
   rFU = 112,
-#ifdef KANRYAKU /* 簡略版 */
+
+  // 簡略タイプの駒
   TATE = 113,
   ISHI = 114,
   JYU = 115,
   KOMA_END=115 // 駒の順番を変える可能性あるため、最後の駒  
-#else /* ! KANRYAKU */
-  KOMA_END=112 // 駒の順番を変える可能性あるため、最後の駒
-#endif // ! KANRYAKU
-#else // 後手無し
-  KOMA_END=107 // 駒の順番を変える可能性あるため、最後の駒
-#endif
 };
 
 /* 拡張盤2
@@ -88,15 +89,31 @@ public:
   static const int OFFSETn2 = OFFSET*OFFSET;
   static const int XY_START_ARRAY_E= OFFSET * BANPEI_SIZE + BANPEI_SIZE;
 
-  static char **KOMA_PRINT; // 印刷用文字列 init()で初期化
+  static char **KOMA_PRINT; // 印刷用文字列 init()で初期化/日本語まじり
+  static char **KOMA_PRINT_ENG; // 印刷用文字列 init()で初期化/英字のみ。
+
+
   static int **KOMA_EFFECT; // 駒の動き init()で初期化
   static int64_t found_count; // 見付かった数
   static int best_koma_nokori; // 現時点で一番駒を置く事が出来た場合の、残りの駒数。
 
-#ifdef IKIDOKORO_NASHI
-  static int BOARD_NG[KOMA_END+1][OFFSETn2];
-#endif
+  // flagの初期化はBoard.ccの頭
+  // 初期値を書き換えた場合はBoard.cの頭を書き換える。
 
+  // true:英語表示, false:日本語表示(default)
+  static bool flag_print_english; 
+
+  // TODO: 実際に使うか検討。
+  // true:後手の駒あり。false:後手なし(default)
+  // ファイルの入力の時にチェックするだけ。内部的には常に有効
+  static bool flag_enable_gote; 
+
+  // true: 行き所の無い駒を反則とする. false:反則としない(default)
+  static bool flag_enable_rule_ikidokoro_nashi; 
+
+  static int BOARD_NG[KOMA_END+1][OFFSETn2];
+
+  // classのstatic変数の初期化。
   static void init(void);
 
   // 拡張盤(Xe,Ye) ->  拡張盤(Array)へ変換
@@ -187,12 +204,21 @@ public:
     「9九」はX=0, Y=0, 
   */
 
-  void Print();
-  void Print_e();
-  void PrintLine();
-  void PrintLine_e();
+  // 日本語まじり
+  // 独自定義。
+
+  // 英字のみ。
+  // コンピュータ将棋のコマの標準的な表し方(?)
+  // http://www2.computer-shogi.org/protocol/record_v2.html
+
+
+  void Print(); // 盤面表示
+  void Print_e(); // 拡張盤全体表示
+  void PrintLine(); // 1行で盤面表示
+  void PrintLine_e(); // 1行で拡張盤全体表示
   void PrintLast(int koma_nokori, int masu_nokori); // 盤面発見時の表示用
   void PrintLast_FuKei(int koma_nokori, int masu_nokori); // 歩と香をまじめに置いてない用
+
   /*
     ret = 0 : 駒を置く事に失敗した。
     ret = 1 : 駒を置く事に成功した。
@@ -204,10 +230,8 @@ public:
     if(b[array_e] != EMPTY)
       return 0;
 
-#ifdef IKIDOKORO_NASHI
-    if(BOARD_NG[c][array_e])
+    if(flag_enable_rule_ikidokoro_nashi && BOARD_NG[c][array_e])
       return 0;
-#endif
 
     for(int i= 0; ; i++) {
       int j = KOMA_EFFECT[c][i];

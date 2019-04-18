@@ -6,6 +6,7 @@
 
 int main()
 {
+  
   Board::init();
 
   for(int c = KOMA_START; c <= KOMA_END; c++){

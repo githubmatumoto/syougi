@@ -17,10 +17,10 @@ public:
     if(b[array_e] != EMPTY)
       return 0;
 
-#ifdef IKIDOKORO_NASHI
-    if(BOARD_NG[c][array_e])
+
+    if(flag_enable_rule_ikidokoro_nashi && BOARD_NG[c][array_e])
       return 0;
-#endif
+
 
     for(int i= 0; ; i++) {
       int j = KOMA_EFFECT[c][i];

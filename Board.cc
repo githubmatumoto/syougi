@@ -1,5 +1,6 @@
 #include "Board.h"
 
+// static変数。定義はBoard.hの中をみよ。
 const int
   Board::SIZE;
 const int
@@ -13,10 +14,13 @@ int64_t
 int
   Board::best_koma_nokori;
 
-#ifdef IKIDOKORO_NASHI
+// 初期値を書き換えた場合はBoard.hのコメントを書き換える。
+bool Board::flag_print_english = false;
+bool Board::flag_enable_gote = false;
+bool Board::flag_enable_rule_ikidokoro_nashi = false;
+
 int
   Board::BOARD_NG[KOMA_END+1][OFFSETn2];
-#endif
 
 static int  cmpint(const void *p1, const void *p2)
 {
@@ -37,13 +41,9 @@ Board::init (void)
     //"■",  // EFFECTが1重の時の表現
     " 1", // EFFECTが1重の時の表現
     "飛", "角", "王", "香", "金", "銀", "桂", "歩" 
-#ifdef GEN_GOTE // 後手有り
     // 後手/香, 後手/金, 後手/銀, 後手/桂, 後手/歩
       ,"京"    , "琴"  , "吟"  , "軽" , "符" 
-#ifdef KANRYAKU
     ,"縦", "石", "拾"
-#endif
-#endif
 };
 
   // debug用にマイナスの部分にも値を入れておく。
@@ -93,7 +93,6 @@ Board::init (void)
 	}
     }
   
-#ifdef GEN_GOTE // 後手有り
   cout << "後手有り。表示の都合で以下のように表記" << endl;
   cout << "> 後手/香 :" << KOMA_PRINT[rKYOU];
   cout << ", 後手/金 :" << KOMA_PRINT[rKIN];
@@ -101,36 +100,71 @@ Board::init (void)
   cout << ", 後手/桂 :" << KOMA_PRINT[rKEI];
   cout << ", 後手/歩 :" << KOMA_PRINT[rFU] << endl;
   cout << "> その他の駒は先手後手で表示区別無し。" << endl;
-#endif
 
-  if(0){ // 古い初期化方法方
-#include "koma_ugoki.cc"
+// 新しい初期化方法方
+  { 
+      // 駒をx=0, y=0 に置いた時の {x,y}
+  int koma_ugoki[][(SIZE-1)*4 + 1][2] =   // 隙間だらけの配列
+    {
+      // HISHA
+      // 後で設定
+      {{1,0}, {2,0}, {3,0}, {4,0}, {5,0}, {6,0}, {7,0}, {8,0},
+       {-1,0}, {-2,0}, {-3,0}, {-4,0}, {-5,0}, {-6,0}, {-7,0}, {-8,0},
+       {0,1}, {0,2}, {0,3}, {0,4}, {0,5}, {0,6}, {0,7}, {0,8},
+       {0,-1}, {0,-2}, {0,-3}, {0,-4}, {0,-5}, {0,-6}, {0,-7}, {0,-8},
+       {0,0}},
+      // KAKU
+      // 後で設定
+      {{1,1}, {2,2}, {3,3}, {4,4}, {5,5}, {6,6}, {7,7}, {8,8},
+       {1,-1}, {2,-2}, {3,-3}, {4,-4}, {5,-5}, {6,-6}, {7,-7}, {8,-8},
+       {-1,1}, {-2,2}, {-3,3}, {-4,4}, {-5,5}, {-6,6}, {-7,7}, {-8,8},
+       {-1,-1}, {-2,-2}, {-3,-3}, {-4,-4}, {-5,-5}, {-6,-6}, {-7,-7}, {-8,-8},
+       {0,0}},
+      // OU
+      {{-1,-1},{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,1},{-1,0},{0,0}},
+      // KYOU
+      // 後で設定
+      {{1,0}, {2,0}, {3,0}, {4,0}, {5,0}, {6,0}, {7,0}, {8,0}, {0,0}},
+      // KIN
+      {{0,-1},{1,-1},{1,0},{1,1},{0,1},{-1,0},{0,0}},
+      // GIN
+      {{-1,-1},{1,-1},{1,0},{1,1},{-1,1},{0,0}},
+      // KEI
+      {{2,-1},{2,1},{0,0}},
+      // FU
+      {{1, 0}, {0,0}},
 
-    KOMA_EFFECT = new int *[KOMA_END + 1];
+      // 後手有り
+      // rKYOU
+      // 後で設定
+      {{-1,0}, {-2,0}, {-3,0}, {-4,0}, {-5,0}, {-6,0}, {-7,0}, {-8,0}, {0,0}},
+      // rKIN
+      {{-1,-1},{0,-1},{1,0},{0,1},{-1,1},{-1,0},{0,0}},
+      // rGIN
+      {{-1,-1},{1,-1},{1,1},{-1,1},{-1,0},{0,0}},
+      // rKEI
+      {{-2,-1},{-2,1},{0,0}},
+      // rFU
+      {{-1, 0}, {0,0}},
 
-    for (int i = 0; i <= KOMA_END; i++)
-      KOMA_EFFECT[i] = NULL;
+    // TATE
+      {{1,0}, {2,0}, {3,0}, {4,0}, {5,0}, {6,0}, {7,0}, {8,0},
+       {-1,0}, {-2,0}, {-3,0}, {-4,0}, {-5,0}, {-6,0}, {-7,0}, {-8,0},
+       {0,0}},
+    // ISHI
+      {{0, 0}},
+    // JYU
+      {{0,-1},{1,0},{0,1},{-1,0},{0,0}},
+    };
 
-    for (int i = KOMA_START, j = 0; i <= KOMA_END; i++, j++)
-      KOMA_EFFECT[i] = koma_ugoki[j];
 
-    if (SIZE != 9)
-      {
-	cerr << "ERROR in Board.cc: Error SIZE != 9" << endl;
-	exit (1);
-      }
-  }else { // // 新しい初期化方法方
-#include "koma_ugoki2.cc"
     /* 盤が9x9 以外の場合があるので、動的に計算 */
     int hisya = 0
       , kaku = 0, kyou = 0;
-#ifdef GEN_GOTE // 後手有り
+    // 後手有り
     int r_kyou = 0;
-#ifdef KANRYAKU
       // 簡易版: 縦
     int tate = 0;
-#endif
-#endif
     if (SIZE != 9){
     for(int i = 1, j=0; i < SIZE; i++, j++){
       // 飛車
@@ -148,28 +182,19 @@ Board::init (void)
       // 香車
       koma_ugoki[KYOU - KOMA_START][kyou][0] = i; koma_ugoki[KYOU - KOMA_START][kyou][1] = 0; kyou++;
 
-#ifdef GEN_GOTE // 後手有り
       // 後手 香車
       koma_ugoki[rKYOU - KOMA_START][r_kyou][0] = -i; koma_ugoki[rKYOU - KOMA_START][r_kyou][1] = 0;r_kyou++;
 
-#ifdef KANRYAKU
       // 簡易版: 縦
       koma_ugoki[TATE - KOMA_START][tate][0] = i; koma_ugoki[TATE - KOMA_START][tate][1] = 0;tate++;
       koma_ugoki[TATE - KOMA_START][tate][0] = -i; koma_ugoki[TATE - KOMA_START][tate][1] = 0;tate++;
-#endif
-#endif
-
 
     }
     koma_ugoki[HISYA - KOMA_START][hisya][0] = 0; koma_ugoki[HISYA - KOMA_START][hisya][1] = 0;
     koma_ugoki[KAKU - KOMA_START][kaku][0] = 0; koma_ugoki[KAKU - KOMA_START][kaku][1] = 0;
     koma_ugoki[KYOU - KOMA_START][kyou][0] = 0; koma_ugoki[KYOU - KOMA_START][kyou][1] = 0;
-#ifdef GEN_GOTE // 後手有り
     koma_ugoki[rKYOU - KOMA_START][r_kyou][0] = 0; koma_ugoki[rKYOU - KOMA_START][r_kyou][1] = 0;
-#ifdef KANRYAKU
     koma_ugoki[TATE - KOMA_START][tate][0] = 0; koma_ugoki[TATE - KOMA_START][tate][1] = 0;
-#endif
-#endif
     }
     // メモリサイズ計算
     int mem_count = 0;
@@ -230,8 +255,8 @@ Board::init (void)
     }
   }
 
-#ifdef IKIDOKORO_NASHI
-  cout << "行き所の無い駒禁止。\n";
+  if(flag_enable_rule_ikidokoro_nashi)
+    cout << "行き所の無い駒禁止。\n";
 
   for(int i = 0; i <= KOMA_END; i++){
     for(int j = 0; j < OFFSETn2; j++)
@@ -260,7 +285,6 @@ Board::init (void)
 	BOARD_NG[KEI][array_e] = 1;
       }
     }
-#endif  
 
 #ifdef COUNT_KOMAITI
   cout << "大駒位置移動時のみ表示\n";

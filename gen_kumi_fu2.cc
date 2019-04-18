@@ -2,14 +2,16 @@
 #error "ERROR"
 #endif
 
-#if IKIDOKORO_NASHI
-#error "NG: IKIDOKORO_NASHI"
-#endif
-
 static void __attribute__ ((noinline))
 gen_kumi_fu (const int leng, BOARD_CLASS & list, int koma_nokori,
 	     int masu_nokori)
 {
+  if(Board::flag_enable_rule_ikidokoro_nashi==true)
+    {
+      cerr << "ERROR: 行き所の無い駒禁止は未対応\n";
+      exit(1);
+    }
+
   int set_fu[koma_nokori + 1];
   int set_fu_c = 0;
 
