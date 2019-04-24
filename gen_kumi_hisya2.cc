@@ -18,10 +18,11 @@ gen_kumi_hisya (const int leng, int youso[][2],
   cout << "MESS: TIME_TEST START\n";
 #endif
 
-#ifndef GEN_GOTE
-  cout <<"ERROR: 後手アリのみ\n";
-  return;
-#endif
+  if(Board::flag_enable_gote==false)
+    {
+      cout <<"ERROR: 後手アリのみ\n";
+      return;
+    }
 
 #ifdef TIME_TEST2    
   // TIME_TEST2では飛車はすでに並べている

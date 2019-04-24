@@ -10,6 +10,7 @@
 
 class Board3 : public Board2 {
 public:
+  
 
   int Set_Array_e(int array_e, KOMA c){
     int ret = 0;

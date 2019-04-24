@@ -19,6 +19,7 @@ CFLAGS=-Wall -O3
 # 駒をsearchXX.ccのmainの所で定義したPreSetPosの定義に従って並べる。
 #CFLAGS := $(CFLAGS) -DPRESET_KOMA
 
+# 廃止(2019/4/19): プログラム引数
 # -DIKIDOKORO_NASHI
 # 行き所の無い駒は禁止
 #CFLAGS := $(CFLAGS) -DIKIDOKORO_NASHI
@@ -29,8 +30,11 @@ CFLAGS=-Wall -O3
 # このflagを定義すると、表示のために「歩」が入った盤面を再生成する。
 # 遅くなるので、全patternのsearchの時はつかわないほうが良い。
 # --> 実測したら有為な差はなさげ。。
+# MEMO(2019/4/19): マクロをプログラム引数に変更しようかと思ったが
+# CPPのinclude + define 技があったので無理。
 CFLAGS := $(CFLAGS) -DPRINT_FU
 
+# 廃止(2019/4/19): プログラム引数
 # 後手のコードを生成
 #CFLAGS := $(CFLAGS) -DGEN_GOTE
 

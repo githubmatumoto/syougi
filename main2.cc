@@ -28,8 +28,11 @@ void add(BOARD_CLASS &b, KOMA list[])
 
 int main()
 {
+  //Board::flag_print_english=true;
+  //Board::cflag_print_enhanced_effect = false;
+
   Board::init();
-  BOARD_CLASS start;
+
 
   KOMA list[] = {OH, KIN, FU, KIN, OH, 
 	       HISYA, 
@@ -41,6 +44,10 @@ int main()
 	       HISYA,
 	       KEI, KEI, GIN, KIN, FU, KIN,
 	       EMPTY};
+
+  //成功する
+  BOARD_CLASS start;
+  add(start, list);
 
   // ちょとかえてる
   KOMA list2[] = {OH, KIN, FU, KIN, OH, 
@@ -54,10 +61,10 @@ int main()
 		  KEI, KEI, KIN, KIN, GIN,FU,
 	       EMPTY};
 
-  //add(start, list2);
-  add(start, list);
+  //失敗する。
+  BOARD_CLASS start2;
+  add(start2, list2);
 
-#ifdef GEN_GOTE
   KOMA rlist[] = {OH, rKIN, rFU, rKIN, OH, 
 		 HISYA, 
 		 rKYOU, rFU, rFU, rFU, rFU,
@@ -69,7 +76,7 @@ int main()
 		 rKIN, rFU, rKIN, rGIN, rKEI, rKEI,
 		 EMPTY};
 
-  BOARD_CLASS start2;
-  add(start2, rlist);
-#endif
+  //成功する
+  BOARD_CLASS start3;
+  add(start3, rlist);
 }

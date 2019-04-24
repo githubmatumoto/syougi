@@ -5,7 +5,7 @@ const int
   Board::SIZE;
 const int
   Board::OFFSET;
-char **
+char ***
   Board::KOMA_PRINT;
 int **
   Board::KOMA_EFFECT;
@@ -17,7 +17,10 @@ int
 // 初期値を書き換えた場合はBoard.hのコメントを書き換える。
 bool Board::flag_print_english = false;
 bool Board::flag_enable_gote = false;
+bool Board::flag_print_gote_rev_coler = false;
 bool Board::flag_enable_rule_ikidokoro_nashi = false;
+bool Board::flag_count_komaiti = false; 
+bool Board::cflag_print_enhanced_effect = true;
 
 int
   Board::BOARD_NG[KOMA_END+1][OFFSETn2];
@@ -30,76 +33,130 @@ static int  cmpint(const void *p1, const void *p2)
 void
 Board::init (void)
 {
+  //int debug = 1;
   int debug = 0;
+
   Board::found_count = 0;
   Board::best_koma_nokori = SIZE * SIZE;
 
-// 飛車, 角, 王は先手後手の区別無し。
+  static bool done_init = false;
+  if(done_init == true)
+    {
+      // この関数、何回も動かすとメモリリークします。
+      cerr << "ERROR: Board::init: 二重実行です。\n";
+      exit(1);
+    }
+  done_init = true;
 
-  static const char *tmp[] =
-  { "□", 
-    //"■",  // EFFECTが1重の時の表現
-    " 1", // EFFECTが1重の時の表現
-    "飛", "角", "王", "香", "金", "銀", "桂", "歩" 
-    // 後手/香, 後手/金, 後手/銀, 後手/桂, 後手/歩
-      ,"京"    , "琴"  , "吟"  , "軽" , "符" 
-    ,"縦", "石", "拾"
-};
+  static const struct KomaStringInit tmp_coma_string[] = 
+  { 
+    {EMPTY, "EMPTY", "□", "□", " * "},
+    {EFFECT, "ERROR/EFFECT", "■", "■", "=E="},// EFFECTの表現はcflag_print_enhanced_effectで変更される
 
+    // 大駒以外の移動検出用。 
+    {KOMAITI_CHANGE, "ERROR/KOMAITI_CHANGE", "△", "△", "=H="},
+    // 普通の駒
+    {HISYA, "HISYA", "飛", "飛", "+HI"}, 
+    {KAKU, "KAKU", "角", "角", "+KA"}, 
+    {OH, "OH", "王", "王", "+OU"},
+    {KYOU, "KYOU", "香", "香", "+KY"},
+    {KIN, "KIN", "金", "金","+KI"},
+    {GIN, "GIN", "銀", "銀","+GI"},
+    {KEI, "KEI", "桂", "桂", "+KE"}, 
+    {FU, "FU", "歩", "歩", "+FU"},
+    // 以下後手。Board.h, enum KOMA参照
+    {rKYOU, "rKYOU", "京", "\e[7m香\e[m", "-KY"},
+    {rKIN, "rKIN", "琴", "\e[7m金\e[m", "-KI"}, 
+    {rGIN, "rGIN", "吟", "\e[7m銀\e[m", "-GI"},
+    {rKEI, "rKEI", "軽", "\e[7m桂\e[m", "-KE"}, 
+    {rFU, "rFU", "符", "\e[7m歩\e[m", "-FU"},
+    // 以下独自。Board.h, enum KOMA参照
+    {TATE, "TATE", "縦", "縦","+TA"},
+    {ISHI, "ISHI", "石", "石", "+IS"}, 
+    {JYU, "JYU", "拾", "拾","+JY"},
+    { -1, "ERROR", "ERROR", "ERROR", "ERROR"}
+  };
+
+  
   // debug用にマイナスの部分にも値を入れておく。
   // "-9", "-8", "-7" .... "-1", "□", "■", " 2", " 3", ... "飛",  "角" ... 
 
   int offset = 9;
   int mem_len = KOMA_END + 1 + offset;
-  KOMA_PRINT = new char *[mem_len];
+  KOMA_PRINT = new char **[mem_len];
 
   for (int i = 0; i < mem_len; i++)
     {
-      KOMA_PRINT[i] = new char[10];
-      KOMA_PRINT[i][0] = '\0';
+      KOMA_PRINT[i] = new char*[KomaStringInit::coma_string_size];
+
+      for(int j = 0; j < KomaStringInit::coma_string_size; j++){
+	KOMA_PRINT[i][j] = new char[KomaStringInit::default_str_size];
+	strcpy(KOMA_PRINT[i][j], "ERROR/nonINIT");
+      }
     }
 
   // "-9", "-8", "-7" .... "-1"
   for (int i = 0; i < offset; i++)
-    sprintf (KOMA_PRINT[i], "%d", (i - offset));
+    {
+      sprintf (KOMA_PRINT[i][KomaStringInit::enum_str_index], "ERROR/EFFECT%d", (i - offset));
 
-  // 始点を"□"に
+      sprintf (KOMA_PRINT[i][KomaStringInit::jp_str_index], "%d", (i - offset));
+      sprintf (KOMA_PRINT[i][KomaStringInit::jp_str_rev_index], "%d", (i - offset));
+      sprintf (KOMA_PRINT[i][KomaStringInit::eng_str_index], " %d", (i - offset));
+    }
+
+  // 始点をEMPTYに。
   KOMA_PRINT += offset;
-  strcpy (KOMA_PRINT[0], tmp[0]);
-  strcpy (KOMA_PRINT[1], tmp[1]);
 
   // 2 から KOMA_START-1まで数字を入れる。
 
-  for (int i = 2; i < KOMA_START; i++)
-    sprintf (KOMA_PRINT[i], "%2d", i);
+  for(int i = 0; tmp_coma_string[i].k  != -1; i++)
+    {
+      int k = tmp_coma_string[i].k;
+      strcpy (KOMA_PRINT[k][KomaStringInit::enum_str_index], tmp_coma_string[i].enum_str);
+      strcpy (KOMA_PRINT[k][KomaStringInit::jp_str_index], tmp_coma_string[i].jp_str);
+      strcpy (KOMA_PRINT[k][KomaStringInit::jp_str_rev_index], tmp_coma_string[i].jp_str_rev);
+      strcpy (KOMA_PRINT[k][KomaStringInit::eng_str_index], tmp_coma_string[i].eng_str);
+    }
 
-#ifdef COUNT_KOMAITI
-  strcpy(KOMA_PRINT[KOMAITI_CHANGE], "△");
-#endif
-
-  // tmp[2]=飛車から入れる。
-  for (int i = KOMA_START, j = 2; i <= KOMA_END; i++, j++)
-    strcpy (KOMA_PRINT[i], tmp[j]);
+  if(cflag_print_enhanced_effect)
+    {
+      for (int i = EFFECT; i <= EFFECT_LAST; i++)
+	{
+	  sprintf (KOMA_PRINT[i][KomaStringInit::enum_str_index], "ERROR/EFFECT%d", i);
+	  sprintf (KOMA_PRINT[i][KomaStringInit::jp_str_index], "%2d", i);
+	  sprintf (KOMA_PRINT[i][KomaStringInit::jp_str_rev_index], "%2d", i);
+	  sprintf (KOMA_PRINT[i][KomaStringInit::eng_str_index], " %2d", i);
+	}
+    }
+  else
+    {
+      for (int i = EFFECT+1; i <= EFFECT_LAST; i++)
+	{
+	  sprintf (KOMA_PRINT[i][KomaStringInit::enum_str_index], "ERROR/EFFECT%d", i);
+	  strcpy (KOMA_PRINT[i][KomaStringInit::jp_str_index], "■");
+	  strcpy (KOMA_PRINT[i][KomaStringInit::jp_str_rev_index], "■");
+	  strcpy (KOMA_PRINT[i][KomaStringInit::eng_str_index], "=E=");
+	}
+    }
 
   if (debug)
     {				// debug print
-      for (int i = -offset; i < 0; i++)
+      for (int i = -offset; i <=KOMA_END; i++)
 	{
-	  cout << "i=" << i << " = \"" << KOMA_PRINT[i] << "\"" << endl;
+	  cout << "i=" << i << " = \"" << KOMA_PRINT[i][KomaStringInit::enum_str_index] << "\", \"" << KOMA_PRINT[i][KomaStringInit::jp_str_index] << "\", \"" << KOMA_PRINT[i][KomaStringInit::jp_str_rev_index] << "\", \"" << KOMA_PRINT[i][KomaStringInit::eng_str_index] << "\"" << endl;
 	}
-      for (int i = 0; i <= KOMA_END; i++)
-	{
-	  cout << "i=" << i << " = \"" << KOMA_PRINT[i] << "\"" << endl;
-	}
+      //exit(1);
     }
   
-  cout << "後手有り。表示の都合で以下のように表記" << endl;
+  /*  cout << "後手有り。表示の都合で以下のように表記" << endl;
   cout << "> 後手/香 :" << KOMA_PRINT[rKYOU];
   cout << ", 後手/金 :" << KOMA_PRINT[rKIN];
   cout << ", 後手/銀 :" << KOMA_PRINT[rGIN];
   cout << ", 後手/桂 :" << KOMA_PRINT[rKEI];
   cout << ", 後手/歩 :" << KOMA_PRINT[rFU] << endl;
   cout << "> その他の駒は先手後手で表示区別無し。" << endl;
+  */
 
 // 新しい初期化方法方
   { 
@@ -232,7 +289,7 @@ Board::init (void)
       int *t = KOMA_EFFECT[i];
 
       if(debug)
-	cout << "KOMA = " << KOMA_PRINT[i] << endl;
+	cout << "KOMA = " << KOMA_PRINT[i][KomaStringInit::enum_str_index] << endl;
 
       if(debug){
 	cout << " presort = [";
@@ -256,7 +313,7 @@ Board::init (void)
   }
 
   if(flag_enable_rule_ikidokoro_nashi)
-    cout << "行き所の無い駒禁止。\n";
+    cout << "#MESSAGE: 行き所の無い駒禁止。\n";
 
   for(int i = 0; i <= KOMA_END; i++){
     for(int j = 0; j < OFFSETn2; j++)
@@ -285,39 +342,59 @@ Board::init (void)
 	BOARD_NG[KEI][array_e] = 1;
       }
     }
-
-#ifdef COUNT_KOMAITI
-  cout << "大駒位置移動時のみ表示\n";
-#endif
+  if(flag_count_komaiti)
+    cout << "#MESSAGE: 大駒位置移動時のみ表示\n";
 }
 
 void
-Board::Print ()
+Board::Print (void)
 {
-  char line[] = "--";
-
-  cout << "+";
-  for (int i = 0; i < SIZE; i++)
-    cout << line;
-  cout << "+" << endl;;
-
-  for (int i = SIZE - 1; i >= 0; i--)
+  if(flag_print_english==false)
     {
-      cout << "|";
-      for (int j = 0; j < SIZE; j++)
-	{
-	  cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]];
-	}
-      cout << "|" << endl;
-    }
+      char line[] = "--";
 
-  cout << "+";
-  for (int i = 0; i < SIZE; i++)
-    cout << line;
-  cout << "+" << endl;;
+      int index = KomaStringInit::jp_str_index;
+      if(flag_print_gote_rev_coler)
+	index = KomaStringInit::jp_str_rev_index;
+
+      cout << "+";
+      for (int i = 0; i < SIZE; i++)
+	cout << line;
+      cout << "+" << endl;;
+
+      for (int i = SIZE - 1; i >= 0; i--)
+	{
+	  cout << "|";
+	  for (int j = 0; j < SIZE; j++)
+	    {
+	      cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]][index];
+	    }
+	  cout << "|" << endl;
+	}
+
+      cout << "+";
+      for (int i = 0; i < SIZE; i++)
+	cout << line;
+      cout << "+" << endl;;
+    }
+  else
+    {
+      cout << "#" << endl;
+      for (int i = SIZE - 1, j = 1; i >= 0; i--, j++)
+	{
+	  cout << "P" << j;
+	  for (int j = 0; j < SIZE; j++)
+	    {
+	      cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]][KomaStringInit::eng_str_index];
+	    }
+	  cout << endl;
+	}
+      cout << "#" << endl;
+    }
 }
+
 void
-Board::PrintLine ()
+Board::PrintLine (void)
 {
   for (int i = 0; i < SIZE; i++)
     {
@@ -330,7 +407,7 @@ Board::PrintLine ()
 }
 
 void
-Board::PrintLine_e ()
+Board::PrintLine_e (void)
 {
   for (int i = 0; i < OFFSET; i++)
     {
@@ -343,10 +420,28 @@ Board::PrintLine_e ()
 }
 
 void
-Board::Print_e ()
+Board::Print_e (void)
 {
-  char line[] = "--";
-  char pline[] = "==";
+  int index = KomaStringInit::eng_str_index;
+  if(flag_print_english==false)
+    {
+      index = KomaStringInit::jp_str_index;
+      if(flag_print_gote_rev_coler)
+	index = KomaStringInit::jp_str_rev_index;
+    }
+
+  char line[10], pline[10];
+
+  if(flag_print_english==true)
+    {
+      strcpy(line, "---");
+      strcpy(pline, "===");
+    }
+  else
+    {
+      strcpy(line, "--");
+      strcpy(pline, "==");
+    }
 
   for (int j = 0; j < OFFSET; j++)
     {
@@ -362,7 +457,7 @@ Board::Print_e ()
 	{
 	  if (j == BANPEI_SIZE || j == (SIZE + BANPEI_SIZE))
 	    cout << "|";
-	  cout << KOMA_PRINT[b[XeYe_to_Array_e (i, j)]];
+	  cout << KOMA_PRINT[b[XeYe_to_Array_e (i, j)]][index];
 	}
       cout << endl;
 
@@ -419,10 +514,6 @@ Youso hisya2_kaku1_ou1_youso = {
 
 
 */
-
-#ifdef EXT_BAN_2
-#errro "Not impliment"
-#endif
 
 static Board COUNT, COUNT_save;
 static int64_t COUNT_b_total = 0;
