@@ -149,15 +149,6 @@ Board::init (void)
       //exit(1);
     }
   
-  /*  cout << "後手有り。表示の都合で以下のように表記" << endl;
-  cout << "> 後手/香 :" << KOMA_PRINT[rKYOU];
-  cout << ", 後手/金 :" << KOMA_PRINT[rKIN];
-  cout << ", 後手/銀 :" << KOMA_PRINT[rGIN];
-  cout << ", 後手/桂 :" << KOMA_PRINT[rKEI];
-  cout << ", 後手/歩 :" << KOMA_PRINT[rFU] << endl;
-  cout << "> その他の駒は先手後手で表示区別無し。" << endl;
-  */
-
 // 新しい初期化方法方
   { 
       // 駒をx=0, y=0 に置いた時の {x,y}
@@ -349,13 +340,11 @@ Board::init (void)
 void
 Board::Print (void)
 {
+  int index = SelectLangIndex_KOMA_PRINT();
+
   if(flag_print_english==false)
     {
       char line[] = "--";
-
-      int index = KomaStringInit::jp_str_index;
-      if(flag_print_gote_rev_coler)
-	index = KomaStringInit::jp_str_rev_index;
 
       cout << "+";
       for (int i = 0; i < SIZE; i++)
@@ -385,7 +374,7 @@ Board::Print (void)
 	  cout << "P" << j;
 	  for (int j = 0; j < SIZE; j++)
 	    {
-	      cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]][KomaStringInit::eng_str_index];
+	      cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]][index];
 	    }
 	  cout << endl;
 	}
@@ -396,11 +385,12 @@ Board::Print (void)
 void
 Board::PrintLine (void)
 {
+  int index = SelectLangIndex_KOMA_PRINT();
   for (int i = 0; i < SIZE; i++)
     {
       for (int j = 0; j < SIZE; j++)
 	{
-	  cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]];
+	  cout << KOMA_PRINT[b[XY_to_Array_e (i, j)]][index];
 	}
     }
   cout << endl;
@@ -409,11 +399,13 @@ Board::PrintLine (void)
 void
 Board::PrintLine_e (void)
 {
+  int index = SelectLangIndex_KOMA_PRINT();
+
   for (int i = 0; i < OFFSET; i++)
     {
       for (int j = 0; j < OFFSET; j++)
 	{
-	  cout << KOMA_PRINT[b[XeYe_to_Array_e (i, j)]];
+	  cout << KOMA_PRINT[b[XeYe_to_Array_e (i, j)]][index];
 	}
     }
   cout << endl;
@@ -422,13 +414,7 @@ Board::PrintLine_e (void)
 void
 Board::Print_e (void)
 {
-  int index = KomaStringInit::eng_str_index;
-  if(flag_print_english==false)
-    {
-      index = KomaStringInit::jp_str_index;
-      if(flag_print_gote_rev_coler)
-	index = KomaStringInit::jp_str_rev_index;
-    }
+  int index = SelectLangIndex_KOMA_PRINT();
 
   char line[10], pline[10];
 
@@ -662,11 +648,13 @@ youso_ins_empty (int leng, Youso * src, Youso * dst)
 void
 print_youso (const Youso & youso)
 {
+  int index = Board::SelectLangIndex_KOMA_PRINT();
+
   cout << "Koma list Comment: " << youso.m << endl;
   cout << "koma list = ";
   for (int i = 0; youso.y[i][0] != YOUSO_TERMINAL; i++)
     {
-      cout << Board::KOMA_PRINT[youso.y[i][0]] << "x" << youso.
+      cout << Board::KOMA_PRINT[youso.y[i][0]][index] << "x" << youso.
 	y[i][1] << ", ";
     }
   cout << endl;

@@ -146,6 +146,18 @@ public:
 
   static int BOARD_NG[KOMA_END+1][OFFSETn2];
 
+  static int SelectLangIndex_KOMA_PRINT(void)
+  {
+    int index = KomaStringInit::eng_str_index;
+    if(flag_print_english==false)
+      {
+	index = KomaStringInit::jp_str_index;
+	if(flag_print_gote_rev_coler)
+	  index = KomaStringInit::jp_str_rev_index;
+      }
+    return index;
+  }
+
   // classのstatic変数の初期化。
   static void init(void);
 
