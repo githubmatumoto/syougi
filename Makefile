@@ -70,30 +70,28 @@ CC=g++ $(CFLAGS)
 
 ###################################
 
-ALL=search search2 search5 search6 search7 search8 search9 search36 search37 search38 search39 search10 search40
-
-ALL2= main main-2 main-3  main2 main2-2 main2-3
+ALL=search search2 search5 search6 search7 search8 search9 search36 search37 search38 search39 search10 search40 \
+check-ugoki check-ugoki-2 check-ugoki-3 check-mohan check-mohan-2 check-mohan-3
 
 all: $(ALL)
 
-all2:$(ALL2)
 
-main: main.cc Board.cc
+check-ugoki: check-ugoki.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=1
 
-main-2: main.cc Board.cc
+check-ugoki-2: check-ugoki.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=2
 
-main-3: main.cc Board.cc
+check-ugoki-3: check-ugoki.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=3
 
-main2: main2.cc Board.cc
+check-mohan: check-mohan.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=1
 
-main2-2: main2.cc Board.cc
+check-mohan-2: check-mohan.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=2
 
-main2-3: main2.cc Board.cc
+check-mohan-3: check-mohan.cc Board.cc
 	$(CC) $^ -o $@ -DBOARD=3
 
 search: search.cc Board.cc
