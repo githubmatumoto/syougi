@@ -25,7 +25,7 @@ bool Board::cflag_print_enhanced_effect = true;
 int
   Board::BOARD_NG[KOMA_END+1][OFFSETn2];
 
-void pars_args(int argc, char *argv[])
+void parse_args(int argc, char *argv[])
 {
   //Ref: getoptのマニュアル https://linuxjm.osdn.jp/html/LDP_man-pages/man3/getopt.3.html
 

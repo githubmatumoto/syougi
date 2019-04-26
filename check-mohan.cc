@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 {
   //Board::flag_print_english=true;
   //Board::cflag_print_enhanced_effect = false;
-  pars_args(argc, argv);
+  parse_args(argc, argv);
 
   Board::init();
 

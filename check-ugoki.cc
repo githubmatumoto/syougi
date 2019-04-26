@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-  pars_args(argc, argv);
+  parse_args(argc, argv);
 
   Board::init();
 
