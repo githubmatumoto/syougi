@@ -3,23 +3,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <getopt.h>
 
 using namespace std;
 
-#ifdef KANRYAKU
-#ifndef GEN_GOTE
-#error "ERROR: Please Set -DGEN_GOTE"
-#endif
-#endif
-
 #ifndef MASU_LIMIT
 #define MASU_LIMIT 0
-#endif
-
-
-#if IKIDOKORO_NASHI
-// 廃止フラグ
-#error "NG: -DIKIDOKORO_NASHI"
 #endif
 
 
@@ -115,7 +104,7 @@ public:
   // 命名: cflag* : init実行前に設定するフラグ。後から変更不可
 
   // flagの初期化はBoard.ccの頭
-  // 初期値を書き換えた場合はBoard.cの頭を書き換える。
+  // 初期値を書き換えた場合はBoard.cの頭とpars_arg()を書き換える。
 
   // 盤面表示: true:英語表示, false:日本語表示(default)
   static bool flag_print_english; 

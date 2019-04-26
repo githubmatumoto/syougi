@@ -25,3 +25,5 @@ struct PreSetPos{
   char m[100];
 };
 
+
+void pars_args(int argc, char *argv[]);

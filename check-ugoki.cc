@@ -4,11 +4,9 @@
   全ての駒のEFFECTが正しい事を確認。
 */
 
-int main()
+int main(int argc, char **argv)
 {
-  
-  //Board::flag_print_english = true;
-  Board::flag_print_gote_rev_coler = true;
+  pars_args(argc, argv);
 
   Board::init();
 

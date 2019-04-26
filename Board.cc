@@ -25,6 +25,102 @@ bool Board::cflag_print_enhanced_effect = true;
 int
   Board::BOARD_NG[KOMA_END+1][OFFSETn2];
 
+void pars_args(int argc, char *argv[])
+{
+  //Ref: getoptのマニュアル https://linuxjm.osdn.jp/html/LDP_man-pages/man3/getopt.3.html
+
+  int c;
+  while(1)
+    {
+      int option_index = 0;
+
+      static const struct option longopts[] = 
+	{
+	  // 初期値を書き換えた場合はBoard.hのコメントを書き換える。
+
+	  // enable** = defaultが false;
+	  // disable** = defaultが true;
+	  {"help", no_argument, NULL, 'h'},
+	  {"enable_gote", no_argument, NULL, 1001},
+	  {"enable_print_english", no_argument, NULL, 1003},
+	  {"enable_print_gote_rev_coler", no_argument, NULL, 1004},
+	  {"enable_rule_ikidokoro_nashi",  no_argument, NULL, 1005},
+	  {"enable_count_komaiti",  no_argument, NULL, 1006},
+	  {"disable_enhanced_effect", no_argument, NULL, 1007},
+	  {0, 0, 0,  0 }
+	};
+
+      c =  getopt_long(argc, argv, "h", longopts, &option_index);
+      if (c == -1)
+	break;
+
+      switch(c){
+      default:
+      case 'h':
+	{
+	  fprintf(stderr, "usage: %s [options]\n", argv[0]);
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "   -h, --help\n");
+	  fprintf(stderr, "    このメッセージを表示\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --enable_print_english\n");
+	  fprintf(stderr, "    defaultでは駒を日本語表記するが英語表記に変更\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --enable_gote\n");
+	  fprintf(stderr, "    ファイルの入力で、後手の駒を受け付ける。(内部的には常に有効)\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --enable_print_gote_rev_coler\n");
+	  fprintf(stderr, "    後手の駒を色反転して表示。(ttyのみ色反転表示される。)\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --enable_rule_ikidokoro_nashi\n");
+	  fprintf(stderr, "    行き所の無い駒を禁止\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --enable_count_komaiti\n");
+	  fprintf(stderr, "    大駒の移動のみ表示(未実装)\n");
+	  fprintf(stderr, "\n");
+	  fprintf(stderr, "  --disable_enhanced_effect\n");
+	  fprintf(stderr, "   defaultでは駒の利き筋が2重は重なりを数字で表すが\n");
+	  fprintf(stderr, "   2重以上でも表示を変えない\n");
+	  exit(1);
+	}
+      case 1001:
+	Board::flag_enable_gote = true;
+	break;
+
+      case 1003:
+	Board::flag_print_english = true;
+	break;
+
+      case 1004:
+	Board::flag_print_gote_rev_coler = true;
+	break;
+
+      case 1005:
+	Board::flag_enable_rule_ikidokoro_nashi = true;
+	break;
+
+      case 1006:
+	Board::flag_count_komaiti = true;
+	break;
+
+      case 1007:
+	Board::cflag_print_enhanced_effect = false;
+	break;
+      }
+    }
+
+  if (optind < argc) {
+    printf("%s: non-option ARGV-elements: ", argv[0]);
+    while (optind < argc)
+      printf("%s ", argv[optind++]);
+    printf("\n");
+    exit(1);
+  }
+}
+
+
+/////////////////////////////////////////////////////
+
 static int  cmpint(const void *p1, const void *p2)
 {
   return *(int*)p1 - *(int*)p2;
@@ -659,3 +755,5 @@ print_youso (const Youso & youso)
     }
   cout << endl;
 }
+
+
